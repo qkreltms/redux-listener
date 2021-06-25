@@ -29,7 +29,7 @@ const useActionListener: UseActionListener = (actionName, cb) => {
     return () => {
       actionHandler?.removeListener(hash);
     };
-  }, [actionName]);
+  }, [JSON.stringify(actionName)]);
 };
 
 export default useActionListener;

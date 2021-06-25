@@ -55,19 +55,86 @@ test('Should apply latest callback', () => {
   expect(listenMiddleware.listeners.size).toBe(1);
 });
 
-test('Should remove first listener when component unmounted', () => {
+test('Should remove first listener when action name is chagned and register new one', () => {
   const listenMiddleware = createMiddleware();
+  // it listens TEST actions
   const mockAction = 'TEST';
+  let cntForTest = 0;
+  let cntForOthers = 0;
   const { rerender } = renderHook(
-    ({ action }) => useActionListener(action, () => {}),
+    ({ action }) =>
+      useActionListener(action, () => {
+        if (action === 'TEST') {
+          cntForTest += 1;
+        } else {
+          cntForOthers += 1;
+        }
+      }),
     { initialProps: { action: mockAction } }
   );
 
   const middleware = listenMiddleware(mockStore)(mockNext);
   middleware({ type: 'TEST' });
   expect(listenMiddleware.listeners.size).toBe(1);
-  rerender({ action: 'OCCURS_UNMOUNT' });
+  expect(cntForTest).toBe(1);
+
+  // now action name is chagned
+  // it will remove listeneing listener that listens TEST
+  // and will create new listener for CHANGE_ACTION
+  rerender({ action: 'CHANGE_ACTION' });
   expect(listenMiddleware.listeners.size).toBe(1);
+  expect(cntForTest).toBe(1);
+  expect(cntForOthers).toBe(0);
+
+  // dispatch TEST
+  middleware({ type: 'TEST' });
+  // should be 1 because the action TEST is removed
+  expect(cntForTest).toBe(1);
+
+  middleware({ type: 'CHANGE_ACTION' });
+  // should be 1 because the CHANGE_ACTION is registed
+  expect(cntForTest).toBe(1);
+});
+
+test('Should remove first listener when action list is chagned and register new one', () => {
+  const listenMiddleware = createMiddleware();
+  // it listens [TEST] actions
+  const mockAction = ['TEST'];
+  let cntForTest = 0;
+  let cntForOthers = 0;
+  const { rerender } = renderHook(
+    ({ action }) =>
+      useActionListener(action, () => {
+        if (action[0] === 'TEST') {
+          cntForTest += 1;
+        } else {
+          cntForOthers += 1;
+        }
+      }),
+    { initialProps: { action: mockAction } }
+  );
+
+  const middleware = listenMiddleware(mockStore)(mockNext);
+  middleware({ type: 'TEST' });
+  expect(listenMiddleware.listeners.size).toBe(1);
+  expect(cntForTest).toBe(1);
+
+  // now action name is chagned
+  // it will remove listeneing listener that listens TEST
+  // and will create new listener for CHANGE_ACTION
+  rerender({ action: ['CHANGE_ACTION'] });
+  expect(listenMiddleware.listeners.size).toBe(1);
+  expect(cntForTest).toBe(1);
+  expect(cntForOthers).toBe(0);
+
+  // dispatch TEST
+  middleware({ type: 'TEST' });
+  // should be 1 because the action TEST is removed
+  expect(cntForTest).toBe(1);
+
+  middleware({ type: 'CHANGE_ACTION' });
+  // should be 1 because the CHANGE_ACTION is registed
+  expect(cntForTest).toBe(1);
 });
 
 test('Should register multiple listeners with same action name', () => {
